@@ -11,7 +11,8 @@ import {
   Phone,
   Link as LinkIcon,
   Download,
-  Settings2
+  Settings2,
+  XCircle
 } from "lucide-react";
 
 const PLATFORMS = [
@@ -32,9 +33,32 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
 
+  // Initialize state from localStorage
   useEffect(() => {
     setIsClient(true);
+    const savedLink = localStorage.getItem("qr_link");
+    const savedWidth = localStorage.getItem("qr_width");
+    const savedHeight = localStorage.getItem("qr_height");
+    const savedPlatformId = localStorage.getItem("qr_platform");
+
+    if (savedLink) setLink(savedLink);
+    if (savedWidth) setWidth(Number(savedWidth));
+    if (savedHeight) setHeight(Number(savedHeight));
+    if (savedPlatformId) {
+      const platform = PLATFORMS.find(p => p.id === savedPlatformId);
+      if (platform) setSelectedPlatform(platform);
+    }
   }, []);
+
+  // Persist state to localStorage
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem("qr_link", link);
+      localStorage.setItem("qr_width", width.toString());
+      localStorage.setItem("qr_height", height.toString());
+      localStorage.setItem("qr_platform", selectedPlatform.id);
+    }
+  }, [link, width, height, selectedPlatform, isClient]);
 
   useEffect(() => {
     const fetchLogo = async () => {
@@ -121,7 +145,6 @@ export default function Home() {
     }
   };
 
-  // Calculate visual preview size to maintain aspect ratio without exiting container
   const previewRatio = width / height;
   const previewMaxDimension = 240;
   let previewWidth = previewMaxDimension;
@@ -147,7 +170,7 @@ export default function Home() {
             <div className="space-y-6">
               {/* Platform */}
               <section>
-                <label className="block text-sm font-semibold text-slate-700 mb-3">Target Platform</label>
+                <label className="block text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">Target Platform</label>
                 <div className="grid grid-cols-3 gap-2">
                   {PLATFORMS.map((platform) => {
                     const Icon = platform.icon;
@@ -156,14 +179,20 @@ export default function Home() {
                       <button
                         key={platform.id}
                         type="button"
-                        onClick={() => setSelectedPlatform(platform)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (selectedPlatform.id !== platform.id) {
+                            setLink("");
+                            setSelectedPlatform(platform);
+                          }
+                        }}
                         className={`flex flex-col items-center justify-center py-3 px-2 rounded-xl border transition-all ${isActive
-                            ? "border-slate-900 bg-slate-900 text-white"
-                            : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:bg-white"
+                          ? "border-slate-900 bg-slate-900 text-white shadow-md scale-[1.02]"
+                          : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-300 hover:bg-white"
                           }`}
                       >
-                        <Icon className="w-5 h-5 mb-1" />
-                        <span className="text-[10px] font-medium uppercase tracking-tight">{platform.name}</span>
+                        <Icon className={`w-5 h-5 mb-1 ${isActive ? "text-white" : ""}`} />
+                        <span className="text-[10px] font-bold uppercase tracking-tight">{platform.name}</span>
                       </button>
                     );
                   })}
@@ -172,9 +201,9 @@ export default function Home() {
 
               {/* URL */}
               <section>
-                <label className="block text-sm font-semibold text-slate-700 mb-3">Link URL</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <label className="block text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">Link URL</label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-slate-900 transition-colors">
                     <LinkIcon className="w-4 h-4" />
                   </div>
                   <input
@@ -182,34 +211,43 @@ export default function Home() {
                     value={link}
                     onChange={(e) => setLink(e.target.value)}
                     placeholder="https://example.com"
-                    className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900/5 focus:border-slate-900 outline-none text-slate-900"
+                    className="block w-full pl-10 pr-10 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900/5 focus:border-slate-900 outline-none text-slate-900 font-medium"
                   />
+                  {link && (
+                    <button
+                      type="button"
+                      onClick={() => setLink("")}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-300 hover:text-slate-600 transition-colors"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 {!isValidUrl(link) && link !== "" && (
-                  <p className="mt-2 text-xs text-red-500 font-medium">Please enter a valid URL.</p>
+                  <p className="mt-2 text-xs text-red-600 font-bold bg-red-50 px-3 py-1 rounded-lg border border-red-100 inline-block">Please enter a valid URL.</p>
                 )}
               </section>
 
               {/* Sizing */}
               <section>
-                <label className="block text-sm font-semibold text-slate-700 mb-3">Download Size (px)</label>
+                <label className="block text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">Download Size (px)</label>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <span className="text-[10px] text-slate-900 uppercase font-bold">Width</span>
+                    <span className="text-[10px] text-slate-900 uppercase font-black">Width</span>
                     <input
                       type="number"
                       value={width}
                       onChange={(e) => setWidth(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-900 text-slate-900 font-semibold"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/5 focus:border-slate-900 text-black font-black text-lg"
                     />
                   </div>
                   <div className="space-y-1">
-                    <span className="text-[10px] text-slate-900 uppercase font-bold">Height</span>
+                    <span className="text-[10px] text-slate-900 uppercase font-black">Height</span>
                     <input
                       type="number"
                       value={height}
                       onChange={(e) => setHeight(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-900 text-slate-900 font-semibold"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/5 focus:border-slate-900 text-black font-black text-lg"
                     />
                   </div>
                 </div>
@@ -245,7 +283,7 @@ export default function Home() {
                 ) : (
                   <div className="text-center">
                     <Settings2 className="w-8 h-8 text-slate-200 mx-auto mb-2 animate-spin-slow" />
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">Enter link</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Enter link</p>
                   </div>
                 )}
               </div>
@@ -254,14 +292,19 @@ export default function Home() {
             <button
               disabled={!link || !isValidUrl(link)}
               type="button"
-              onClick={handleDownload}
-              className="mt-8 w-full max-w-[240px] flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-bold transition-all bg-slate-900 text-white hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed shadow-lg shadow-slate-900/10"
+              onClick={(e) => {
+                e.preventDefault();
+                handleDownload();
+              }}
+              className="mt-8 w-full max-w-[240px] flex items-center justify-center gap-2 py-4 px-6 rounded-xl font-black text-sm transition-all bg-slate-900 text-white hover:bg-black disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed shadow-xl shadow-slate-900/20 active:scale-95"
             >
-              <Download className="w-4 h-4" />
-              Download PNG
+              <Download className="w-5 h-5" />
+              DOWNLOAD PNG
             </button>
 
-            <p className="mt-4 text-[10px] text-slate-900 font-bold"> Final output: {width} x {height} px </p>
+            <p className="mt-4 text-[10px] text-black font-black uppercase tracking-widest bg-white px-4 py-1.5 rounded-full border border-slate-200 shadow-sm">
+              Output: {width} x {height} px
+            </p>
           </div>
         </div>
       </div>
