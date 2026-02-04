@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "QR Generator",
-  description: "QR Generator for social media platforms",
+  description: "QR Generator for social media platforms ",
 };
 
 export default function RootLayout({
