@@ -27,6 +27,7 @@ const PLATFORMS = [
 export default function Home() {
   const [selectedPlatform, setSelectedPlatform] = useState(PLATFORMS[0]);
   const [link, setLink] = useState("");
+  const [businessName, setBusinessName] = useState("");
   const [width, setWidth] = useState(512);
   const [height, setHeight] = useState(512);
   const [logoDataUrl, setLogoDataUrl] = useState<string>("");
@@ -37,11 +38,13 @@ export default function Home() {
   useEffect(() => {
     setIsClient(true);
     const savedLink = localStorage.getItem("qr_link");
+    const savedBusinessName = localStorage.getItem("qr_business_name");
     const savedWidth = localStorage.getItem("qr_width");
     const savedHeight = localStorage.getItem("qr_height");
     const savedPlatformId = localStorage.getItem("qr_platform");
 
     if (savedLink) setLink(savedLink);
+    if (savedBusinessName) setBusinessName(savedBusinessName);
     if (savedWidth) setWidth(Number(savedWidth));
     if (savedHeight) setHeight(Number(savedHeight));
     if (savedPlatformId) {
@@ -54,11 +57,12 @@ export default function Home() {
   useEffect(() => {
     if (isClient) {
       localStorage.setItem("qr_link", link);
+      localStorage.setItem("qr_business_name", businessName);
       localStorage.setItem("qr_width", width.toString());
       localStorage.setItem("qr_height", height.toString());
       localStorage.setItem("qr_platform", selectedPlatform.id);
     }
-  }, [link, width, height, selectedPlatform, isClient]);
+  }, [link, businessName, width, height, selectedPlatform, isClient]);
 
   useEffect(() => {
     const fetchLogo = async () => {
@@ -119,7 +123,8 @@ export default function Home() {
 
           const pngFile = canvas.toDataURL("image/png", 1.0);
           const downloadLink = document.createElement("a");
-          downloadLink.download = `${selectedPlatform.id}-qr.png`;
+          const sanitizedBusinessName = businessName.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+          downloadLink.download = `${sanitizedBusinessName}-${selectedPlatform.id}-qr.png`;
           downloadLink.href = pngFile;
           downloadLink.click();
         };
@@ -127,7 +132,8 @@ export default function Home() {
       } else {
         const pngFile = canvas.toDataURL("image/png", 1.0);
         const downloadLink = document.createElement("a");
-        downloadLink.download = `${selectedPlatform.id}-qr.png`;
+        const sanitizedBusinessName = businessName.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+        downloadLink.download = `${sanitizedBusinessName}-${selectedPlatform.id}-qr.png`;
         downloadLink.href = pngFile;
         downloadLink.click();
       }
@@ -196,6 +202,32 @@ export default function Home() {
                       </button>
                     );
                   })}
+                </div>
+              </section>
+
+              {/* Business Name */}
+              <section>
+                <label className="block text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">Business Name</label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-slate-900 transition-colors">
+                    <Settings2 className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    placeholder="Enter business name"
+                    className="block w-full pl-10 pr-10 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900/5 focus:border-slate-900 outline-none text-slate-900 font-medium"
+                  />
+                  {businessName && (
+                    <button
+                      type="button"
+                      onClick={() => setBusinessName("")}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-300 hover:text-slate-600 transition-colors"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </section>
 
@@ -290,7 +322,7 @@ export default function Home() {
             </div>
 
             <button
-              disabled={!link || !isValidUrl(link)}
+              disabled={!link || !isValidUrl(link) || !businessName}
               type="button"
               onClick={(e) => {
                 e.preventDefault();
