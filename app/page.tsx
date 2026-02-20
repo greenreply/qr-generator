@@ -12,24 +12,61 @@ import {
   Link as LinkIcon,
   Download,
   Settings2,
-  XCircle
+  XCircle,
 } from "lucide-react";
 
 const PLATFORMS = [
-  { id: "instagram", name: "Instagram", icon: Instagram, color: "text-pink-600", bg: "bg-pink-50" },
-  { id: "facebook", name: "Facebook", icon: Facebook, color: "text-blue-600", bg: "bg-blue-50" },
-  { id: "whatsapp", name: "WhatsApp", icon: Phone, color: "text-green-600", bg: "bg-green-50" },
-  { id: "youtube", name: "YouTube", icon: Youtube, color: "text-red-600", bg: "bg-red-50" },
-  { id: "linkedin", name: "LinkedIn", icon: Linkedin, color: "text-blue-700", bg: "bg-blue-50" },
-  { id: "google", name: "Google", icon: Mail, color: "text-orange-600", bg: "bg-orange-50" },
+  {
+    id: "instagram",
+    name: "Instagram",
+    icon: Instagram,
+    color: "text-pink-600",
+    bg: "bg-pink-50",
+  },
+  {
+    id: "facebook",
+    name: "Facebook",
+    icon: Facebook,
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+  },
+  {
+    id: "whatsapp",
+    name: "WhatsApp",
+    icon: Phone,
+    color: "text-green-600",
+    bg: "bg-green-50",
+  },
+  {
+    id: "youtube",
+    name: "YouTube",
+    icon: Youtube,
+    color: "text-red-600",
+    bg: "bg-red-50",
+  },
+  {
+    id: "linkedin",
+    name: "LinkedIn",
+    icon: Linkedin,
+    color: "text-blue-700",
+    bg: "bg-blue-50",
+  },
+  {
+    id: "google",
+    name: "Google",
+    icon: Mail,
+    color: "text-orange-600",
+    bg: "bg-orange-50",
+  },
+  { id: "other", name: "Other", icon: LinkIcon },
 ];
 
 export default function Home() {
   const [selectedPlatform, setSelectedPlatform] = useState(PLATFORMS[0]);
   const [link, setLink] = useState("");
   const [businessName, setBusinessName] = useState("");
-  const [width, setWidth] = useState(512);
-  const [height, setHeight] = useState(512);
+  const [width, setWidth] = useState(600);
+  const [height, setHeight] = useState(600);
   const [logoDataUrl, setLogoDataUrl] = useState<string>("");
   const [isClient, setIsClient] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
@@ -48,7 +85,7 @@ export default function Home() {
     if (savedWidth) setWidth(Number(savedWidth));
     if (savedHeight) setHeight(Number(savedHeight));
     if (savedPlatformId) {
-      const platform = PLATFORMS.find(p => p.id === savedPlatformId);
+      const platform = PLATFORMS.find((p) => p.id === savedPlatformId);
       if (platform) setSelectedPlatform(platform);
     }
   }, []);
@@ -65,6 +102,10 @@ export default function Home() {
   }, [link, businessName, width, height, selectedPlatform, isClient]);
 
   useEffect(() => {
+    if (selectedPlatform.id === "other") {
+      setLogoDataUrl("");
+      return;
+    }
     const fetchLogo = async () => {
       try {
         const logoPath = `/${selectedPlatform.id}.svg`;
@@ -73,6 +114,7 @@ export default function Home() {
         const base64 = btoa(unescape(encodeURIComponent(text)));
         setLogoDataUrl(`data:image/svg+xml;base64,${base64}`);
       } catch (error) {
+        setLogoDataUrl("");
         console.error("Error fetching logo:", error);
       }
     };
@@ -88,8 +130,9 @@ export default function Home() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    canvas.width = width;
-    canvas.height = height;
+    const quietZonePx = 24;
+    canvas.width = width + quietZonePx * 2;
+    canvas.height = height + quietZonePx * 2;
 
     const svgClone = svg.cloneNode(true) as SVGElement;
     svgClone.setAttribute("width", width.toString());
@@ -100,46 +143,27 @@ export default function Home() {
 
     img.onload = () => {
       ctx.fillStyle = "white";
-      ctx.fillRect(0, 0, width, height);
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const qrSize = Math.min(width, height);
-      const offsetX = (width - qrSize) / 2;
-      const offsetY = (height - qrSize) / 2;
+      const offsetX = quietZonePx;
+      const offsetY = quietZonePx;
 
       ctx.drawImage(img, offsetX, offsetY, qrSize, qrSize);
 
-      if (logoDataUrl) {
-        const logoImg = new Image();
-        logoImg.onload = () => {
-          const logoSize = qrSize * 0.18;
-          const x = (width - logoSize) / 2;
-          const y = (height - logoSize) / 2;
-
-          ctx.fillStyle = "white";
-          const padding = logoSize * 0.15;
-          ctx.fillRect(x - padding, y - padding, logoSize + padding * 2, logoSize + padding * 2);
-
-          ctx.drawImage(logoImg, x, y, logoSize, logoSize);
-
-          const pngFile = canvas.toDataURL("image/png", 1.0);
-          const downloadLink = document.createElement("a");
-          const sanitizedBusinessName = businessName.replace(/[^a-z0-9]/gi, "_").toLowerCase();
-          downloadLink.download = `${sanitizedBusinessName}-${selectedPlatform.id}-qr.png`;
-          downloadLink.href = pngFile;
-          downloadLink.click();
-        };
-        logoImg.src = logoDataUrl;
-      } else {
-        const pngFile = canvas.toDataURL("image/png", 1.0);
-        const downloadLink = document.createElement("a");
-        const sanitizedBusinessName = businessName.replace(/[^a-z0-9]/gi, "_").toLowerCase();
-        downloadLink.download = `${sanitizedBusinessName}-${selectedPlatform.id}-qr.png`;
-        downloadLink.href = pngFile;
-        downloadLink.click();
-      }
+      const pngFile = canvas.toDataURL("image/png", 1.0);
+      const downloadLink = document.createElement("a");
+      const sanitizedBusinessName = businessName
+        .replace(/[^a-z0-9]/gi, "_")
+        .toLowerCase();
+      downloadLink.download = `${sanitizedBusinessName}-${selectedPlatform.id}-qr.png`;
+      downloadLink.href = pngFile;
+      downloadLink.click();
     };
 
-    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+    img.src =
+      "data:image/svg+xml;base64," +
+      btoa(unescape(encodeURIComponent(svgData)));
   };
 
   const isValidUrl = (url: string) => {
@@ -166,7 +190,9 @@ export default function Home() {
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-4xl mx-auto">
         <header className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Social QR Generator</h1>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            Social QR Generator
+          </h1>
           <p className="text-slate-500">Fast, simple, and branded QR codes.</p>
         </header>
 
@@ -176,7 +202,9 @@ export default function Home() {
             <div className="space-y-6">
               {/* Platform */}
               <section>
-                <label className="block text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">Target Platform</label>
+                <label className="block text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">
+                  Target Platform
+                </label>
                 <div className="grid grid-cols-3 gap-2">
                   {PLATFORMS.map((platform) => {
                     const Icon = platform.icon;
@@ -192,13 +220,18 @@ export default function Home() {
                             setSelectedPlatform(platform);
                           }
                         }}
-                        className={`flex flex-col items-center justify-center py-3 px-2 rounded-xl border transition-all ${isActive
-                          ? "border-slate-900 bg-slate-900 text-white shadow-md scale-[1.02]"
-                          : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-300 hover:bg-white"
-                          }`}
+                        className={`flex flex-col items-center justify-center py-3 px-2 rounded-xl border transition-all ${
+                          isActive
+                            ? "border-slate-900 bg-slate-900 text-white shadow-md scale-[1.02]"
+                            : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-300 hover:bg-white"
+                        }`}
                       >
-                        <Icon className={`w-5 h-5 mb-1 ${isActive ? "text-white" : ""}`} />
-                        <span className="text-[10px] font-bold uppercase tracking-tight">{platform.name}</span>
+                        <Icon
+                          className={`w-5 h-5 mb-1 ${isActive ? "text-white" : ""}`}
+                        />
+                        <span className="text-[10px] font-bold uppercase tracking-tight">
+                          {platform.name}
+                        </span>
                       </button>
                     );
                   })}
@@ -207,7 +240,9 @@ export default function Home() {
 
               {/* Business Name */}
               <section>
-                <label className="block text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">Business Name</label>
+                <label className="block text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">
+                  Business Name
+                </label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-slate-900 transition-colors">
                     <Settings2 className="w-4 h-4" />
@@ -233,7 +268,9 @@ export default function Home() {
 
               {/* URL */}
               <section>
-                <label className="block text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">Link URL</label>
+                <label className="block text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">
+                  Link URL
+                </label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-slate-900 transition-colors">
                     <LinkIcon className="w-4 h-4" />
@@ -256,16 +293,22 @@ export default function Home() {
                   )}
                 </div>
                 {!isValidUrl(link) && link !== "" && (
-                  <p className="mt-2 text-xs text-red-600 font-bold bg-red-50 px-3 py-1 rounded-lg border border-red-100 inline-block">Please enter a valid URL.</p>
+                  <p className="mt-2 text-xs text-red-600 font-bold bg-red-50 px-3 py-1 rounded-lg border border-red-100 inline-block">
+                    Please enter a valid URL.
+                  </p>
                 )}
               </section>
 
               {/* Sizing */}
               <section>
-                <label className="block text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">Download Size (px)</label>
+                <label className="block text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">
+                  Download Size (px)
+                </label>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <span className="text-[10px] text-slate-900 uppercase font-black">Width</span>
+                    <span className="text-[10px] text-slate-900 uppercase font-black">
+                      Width
+                    </span>
                     <input
                       type="number"
                       value={width}
@@ -274,7 +317,9 @@ export default function Home() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <span className="text-[10px] text-slate-900 uppercase font-black">Height</span>
+                    <span className="text-[10px] text-slate-900 uppercase font-black">
+                      Height
+                    </span>
                     <input
                       type="number"
                       value={height}
@@ -305,17 +350,23 @@ export default function Home() {
                     value={link}
                     size={Math.min(previewWidth, previewHeight) - 32}
                     level="H"
-                    imageSettings={logoDataUrl ? {
-                      src: logoDataUrl,
-                      height: 32,
-                      width: 32,
-                      excavate: true,
-                    } : undefined}
+                    imageSettings={
+                      selectedPlatform.id !== "other" && logoDataUrl
+                        ? {
+                            src: logoDataUrl,
+                            height: 32,
+                            width: 32,
+                            excavate: true,
+                          }
+                        : undefined
+                    }
                   />
                 ) : (
                   <div className="text-center">
                     <Settings2 className="w-8 h-8 text-slate-200 mx-auto mb-2 animate-spin-slow" />
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Enter link</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                      Enter link
+                    </p>
                   </div>
                 )}
               </div>
@@ -343,8 +394,12 @@ export default function Home() {
 
       <style jsx global>{`
         @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
         }
         .animate-spin-slow {
           animation: spin-slow 8s linear infinite;
