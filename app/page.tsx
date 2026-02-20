@@ -58,6 +58,7 @@ const PLATFORMS = [
     color: "text-orange-600",
     bg: "bg-orange-50",
   },
+  { id: "other", name: "Other", icon: LinkIcon },
 ];
 
 export default function Home() {
@@ -101,6 +102,10 @@ export default function Home() {
   }, [link, businessName, width, height, selectedPlatform, isClient]);
 
   useEffect(() => {
+    if (selectedPlatform.id === "other") {
+      setLogoDataUrl("");
+      return;
+    }
     const fetchLogo = async () => {
       try {
         const logoPath = `/${selectedPlatform.id}.svg`;
@@ -109,6 +114,7 @@ export default function Home() {
         const base64 = btoa(unescape(encodeURIComponent(text)));
         setLogoDataUrl(`data:image/svg+xml;base64,${base64}`);
       } catch (error) {
+        setLogoDataUrl("");
         console.error("Error fetching logo:", error);
       }
     };
@@ -153,44 +159,6 @@ export default function Home() {
       downloadLink.download = `${sanitizedBusinessName}-${selectedPlatform.id}-qr.png`;
       downloadLink.href = pngFile;
       downloadLink.click();
-      // if (logoDataUrl) {
-      //   const logoImg = new Image();
-      //   logoImg.onload = () => {
-      //     const logoSize = qrSize * 0.18;
-      //     const x = (width - logoSize) / 2;
-      //     const y = (height - logoSize) / 2;
-
-      //     ctx.fillStyle = "white";
-      //     const padding = logoSize * 0.15;
-      //     ctx.fillRect(
-      //       x - padding,
-      //       y - padding,
-      //       logoSize + padding * 2,
-      //       logoSize + padding * 2,
-      //     );
-
-      //     ctx.drawImage(logoImg, x, y, logoSize, logoSize);
-
-      //     const pngFile = canvas.toDataURL("image/png", 1.0);
-      //     const downloadLink = document.createElement("a");
-      //     const sanitizedBusinessName = businessName
-      //       .replace(/[^a-z0-9]/gi, "_")
-      //       .toLowerCase();
-      //     downloadLink.download = `${sanitizedBusinessName}-${selectedPlatform.id}-qr.png`;
-      //     downloadLink.href = pngFile;
-      //     downloadLink.click();
-      //   };
-      //   logoImg.src = logoDataUrl;
-      // } else {
-      //   const pngFile = canvas.toDataURL("image/png", 1.0);
-      //   const downloadLink = document.createElement("a");
-      //   const sanitizedBusinessName = businessName
-      //     .replace(/[^a-z0-9]/gi, "_")
-      //     .toLowerCase();
-      //   downloadLink.download = `${sanitizedBusinessName}-${selectedPlatform.id}-qr.png`;
-      //   downloadLink.href = pngFile;
-      //   downloadLink.click();
-      // }
     };
 
     img.src =
@@ -383,7 +351,7 @@ export default function Home() {
                     size={Math.min(previewWidth, previewHeight) - 32}
                     level="H"
                     imageSettings={
-                      logoDataUrl
+                      selectedPlatform.id !== "other" && logoDataUrl
                         ? {
                             src: logoDataUrl,
                             height: 32,
